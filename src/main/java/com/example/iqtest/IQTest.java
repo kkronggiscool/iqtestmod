@@ -370,7 +370,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
         names.put(p.getUniqueId(), p.getName());
         saveData();
 
-        Bukkit.getScheduler().runTask(this, p::closeInventory);
+        Bukkit.getScheduler().runTask(this, (Runnable) () -> p.closeInventory());
         applyState(p);
 
         TagResolver[] res = {
@@ -393,7 +393,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
                     .replace("<iq>", String.valueOf(iq))
                     .replace('&', '§');
             String name = p.getName();
-            Bukkit.getScheduler().runTask(this, () ->
+            Bukkit.getScheduler().runTask(this, (Runnable) () ->
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "ban " + name + " " + reason));
             return;
         }
