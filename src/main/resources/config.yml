@@ -72,7 +72,7 @@ messages:
   gui-title: "<gradient:#ffd200:#ff9a00><bold>IQ TEST</bold></gradient>"
   welcome-title: "<gradient:#ffd200:#ff9a00><bold>IQ TEST</bold></gradient>"
   welcome-subtitle: "<gray>Answer every question to enter the server"
-  welcome-chat: "<yellow>Welcome! You're frozen until you finish the IQ test. <gray>Hover the paper or read the chat for each question. No going back!"
+  welcome-chat: "<yellow>Welcome! You're frozen until you finish the IQ test. <gray>Read each question in chat or hover the paper. Closed the menu? Right-click the <gold>IQ Test</gold> map or type <yellow>/iq</yellow>."
   question-title: "<gold><bold>Question <current>/<total>"
   question-chat: "<gold>Question <current>/<total>: <white><question>"
   result-title: "<iq>"

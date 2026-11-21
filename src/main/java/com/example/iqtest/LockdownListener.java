@@ -10,7 +10,9 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -94,7 +96,16 @@ public final class LockdownListener implements Listener {
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
-        lock(e, e.getPlayer());
+        Player p = e.getPlayer();
+        if (!plugin.isLocked(p)) return;
+        e.setCancelled(true);
+
+        // Right-clicking the "IQ Test" map opens the test again.
+        Action action = e.getAction();
+        boolean rightClick = action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK;
+        if (rightClick && e.getHand() == EquipmentSlot.HAND && plugin.isTestMap(e.getItem())) {
+            plugin.startTest(p);
+        }
     }
 
     @EventHandler
@@ -128,11 +139,6 @@ public final class LockdownListener implements Listener {
 
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent e) {
-        lock(e, e.getPlayer());
-    }
-
-    @EventHandler
-    public void onHeld(PlayerItemHeldEvent e) {
         lock(e, e.getPlayer());
     }
 
@@ -242,21 +248,23 @@ public final class LockdownListener implements Listener {
 
     @EventHandler
     public void onInvClick(InventoryClickEvent e) {
-        if (!(e.getInventory().getHolder() instanceof IQTest.TestHolder)) return;
-        e.setCancelled(true);
-        if (!(e.getWhoClicked() instanceof Player p)) return;
-        if (e.getClickedInventory() != e.getInventory()) return;
-        plugin.handleClick(p, e.getRawSlot());
+        if (e.getInventory().getHolder() instanceof IQTest.TestHolder) {
+            e.setCancelled(true);
+            if (!(e.getWhoClicked() instanceof Player p)) return;
+            if (e.getClickedInventory() != e.getInventory()) return;
+            plugin.handleClick(p, e.getRawSlot());
+        } else if (e.getWhoClicked() instanceof Player clicker && plugin.isLocked(clicker)) {
+            // Locked players may open and close their inventory, but not move anything around.
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onInvDrag(InventoryDragEvent e) {
-        if (e.getInventory().getHolder() instanceof IQTest.TestHolder) e.setCancelled(true);
-    }
-
-    @EventHandler
-    public void onInvClose(InventoryCloseEvent e) {
-        if (!(e.getInventory().getHolder() instanceof IQTest.TestHolder)) return;
-        if (e.getPlayer() instanceof Player p) plugin.reopenIfNeeded(p);
+        if (e.getInventory().getHolder() instanceof IQTest.TestHolder) {
+            e.setCancelled(true);
+        } else if (e.getWhoClicked() instanceof Player dragger && plugin.isLocked(dragger)) {
+            e.setCancelled(true);
+        }
     }
 }

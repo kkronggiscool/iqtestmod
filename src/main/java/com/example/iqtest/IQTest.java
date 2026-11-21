@@ -20,7 +20,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -55,11 +58,19 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     /** One player's in-progress test. */
     static final class Session {
         final TestHolder holder = new TestHolder();
+        /** Original answer index picked for each question, -1 = not answered yet. */
+        final int[] answers;
+        /** Remembered answer order per question, so going back shows the same layout. */
+        final Map<Integer, List<Integer>> orders = new HashMap<>();
         int index = 0;
-        int correct = 0;
         long lastClick = 0;
         /** order.get(i) = which original answer is shown in the i-th answer slot. */
         List<Integer> order = new ArrayList<>();
+
+        Session(int questionCount) {
+            answers = new int[questionCount];
+            java.util.Arrays.fill(answers, -1);
+        }
     }
 
     // ------------------------------------------------------------------ state
@@ -70,6 +81,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     private static final Material[] ANSWER_MATERIALS = {
             Material.RED_WOOL, Material.BLUE_WOOL, Material.LIME_WOOL, Material.YELLOW_WOOL};
     private static final String[] LETTERS = {"A", "B", "C", "D"};
+    private static final int BACK_SLOT = 18;
 
     /** Finished players. Concurrent because chat events are async. */
     private final Map<UUID, Integer> iqs = new ConcurrentHashMap<>();
@@ -78,6 +90,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     private final List<Question> questions = new ArrayList<>();
     private final List<Tier> tiers = new ArrayList<>();
     private File dataFile;
+    private NamespacedKey mapKey;
 
     // ------------------------------------------------------------------ lifecycle
 
@@ -85,6 +98,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     public void onEnable() {
         saveDefaultConfig();
         dataFile = new File(getDataFolder(), "playerdata.yml");
+        mapKey = new NamespacedKey(this, "test_map");
         loadAll();
 
         var cmd = getCommand("iq");
@@ -242,6 +256,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
             p.setFlySpeed(0f);
             return;
         }
+        removeMaps(p); // the test map disappears once you're done
         Integer iq = iqs.get(p.getUniqueId());
         double mult = iq == null ? 1.0 : tierFor(iq).speed();
         float speed = (float) Math.max(0.0, Math.min(1.0, 0.2 * mult));
@@ -263,10 +278,11 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     /** Opens the test GUI, creating a fresh session if the player has none. */
     void startTest(Player p) {
         if (questions.isEmpty()) return;
+        giveMap(p);
         Session s = sessions.get(p.getUniqueId());
         boolean fresh = false;
         if (s == null) {
-            s = new Session();
+            s = new Session(questions.size());
             s.holder.inventory = Bukkit.createInventory(s.holder, 27, MM.deserialize(raw("gui-title")));
             sessions.put(p.getUniqueId(), s);
             prepareQuestion(s);
@@ -277,16 +293,31 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
         if (fresh) announceQuestion(p, s);
     }
 
-    /** If the player closed the GUI mid-test, open it again. */
-    void reopenIfNeeded(Player p) {
-        if (!isEnabled()) return;
-        Session s = sessions.get(p.getUniqueId());
-        if (s == null) return;
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            if (p.isOnline() && sessions.get(p.getUniqueId()) == s) {
-                p.openInventory(s.holder.getInventory());
-            }
-        }, 2L);
+    boolean isTestMap(ItemStack stack) {
+        if (stack == null || stack.getType() != Material.MAP || !stack.hasItemMeta()) return false;
+        return stack.getItemMeta().getPersistentDataContainer().has(mapKey, PersistentDataType.BYTE);
+    }
+
+    /** Gives the "IQ Test" map (right-click to open the test) unless they already have one. */
+    private void giveMap(Player p) {
+        for (ItemStack it : p.getInventory().getContents()) {
+            if (isTestMap(it)) return;
+        }
+        ItemStack map = item(Material.MAP,
+                Component.text("IQ Test", NamedTextColor.GOLD, TextDecoration.BOLD),
+                List.of(Component.text("Right-click to open your IQ test.", NamedTextColor.GRAY)
+                        .decoration(TextDecoration.ITALIC, false)));
+        ItemMeta meta = map.getItemMeta();
+        meta.getPersistentDataContainer().set(mapKey, PersistentDataType.BYTE, (byte) 1);
+        map.setItemMeta(meta);
+        p.getInventory().addItem(map);
+    }
+
+    private void removeMaps(Player p) {
+        PlayerInventory inv = p.getInventory();
+        for (int i = 0; i < inv.getSize(); i++) {
+            if (isTestMap(inv.getItem(i))) inv.setItem(i, null);
+        }
     }
 
     void handleClick(Player p, int rawSlot) {
@@ -295,6 +326,20 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
 
         long now = System.currentTimeMillis();
         if (now - s.lastClick < 300) return; // ignore double-clicks
+
+        // "Previous question" arrow
+        if (rawSlot == BACK_SLOT) {
+            if (s.index > 0) {
+                s.lastClick = now;
+                s.index--;
+                prepareQuestion(s);
+                render(s);
+                announceQuestion(p, s);
+                p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+            }
+            return;
+        }
+
         Question q = questions.get(s.index);
         int[] slots = SLOTS[q.answers().size()];
         int pos = -1;
@@ -304,7 +349,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
         if (pos < 0) return;
         s.lastClick = now;
 
-        if (s.order.get(pos) == q.correct()) s.correct++;
+        s.answers[s.index] = s.order.get(pos);
         p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
 
         s.index++;
@@ -318,10 +363,15 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
     }
 
     private void prepareQuestion(Session s) {
-        int n = questions.get(s.index).answers().size();
-        s.order = new ArrayList<>();
-        for (int i = 0; i < n; i++) s.order.add(i);
-        Collections.shuffle(s.order);
+        List<Integer> saved = s.orders.get(s.index);
+        if (saved == null) {
+            int n = questions.get(s.index).answers().size();
+            saved = new ArrayList<>();
+            for (int i = 0; i < n; i++) saved.add(i);
+            Collections.shuffle(saved);
+            s.orders.put(s.index, saved);
+        }
+        s.order = saved;
     }
 
     private void render(Session s) {
@@ -338,14 +388,23 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
 
         int[] slots = SLOTS[q.answers().size()];
         for (int i = 0; i < slots.length; i++) {
-            String text = q.answers().get(s.order.get(i));
+            int original = s.order.get(i);
+            boolean chosen = s.answers[s.index] == original;
+            String text = q.answers().get(original);
             inv.setItem(slots[i], item(ANSWER_MATERIALS[i],
-                    Component.text(LETTERS[i] + ") " + text, NamedTextColor.YELLOW),
-                    List.of(Component.text("Click to lock in this answer.", NamedTextColor.GRAY)
+                    Component.text(LETTERS[i] + ") " + text + (chosen ? "  (your answer)" : ""),
+                            chosen ? NamedTextColor.GREEN : NamedTextColor.YELLOW),
+                    List.of(Component.text(chosen ? "Click to confirm and continue." : "Click to pick this answer.",
+                            NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false))));
+        }
+        if (s.index > 0) {
+            inv.setItem(BACK_SLOT, item(Material.ARROW,
+                    Component.text("Previous question", NamedTextColor.AQUA),
+                    List.of(Component.text("Go back and change an answer.", NamedTextColor.GRAY)
                             .decoration(TextDecoration.ITALIC, false))));
         }
         inv.setItem(22, item(Material.OAK_SIGN,
-                Component.text("No going back!", NamedTextColor.RED),
+                Component.text("Take your time", NamedTextColor.GREEN),
                 List.of(Component.text("Your IQ is only revealed at the end.", NamedTextColor.GRAY)
                         .decoration(TextDecoration.ITALIC, false))));
     }
@@ -364,7 +423,11 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
         int total = questions.size();
         double min = getConfig().getDouble("iq.min", -52);
         double max = getConfig().getDouble("iq.max", 108);
-        int iq = (int) Math.round(min + (max - min) * s.correct / total);
+        int correct = 0;
+        for (int i = 0; i < total; i++) {
+            if (s.answers[i] == questions.get(i).correct()) correct++;
+        }
+        int iq = (int) Math.round(min + (max - min) * correct / total);
 
         iqs.put(p.getUniqueId(), iq);
         names.put(p.getUniqueId(), p.getName());
@@ -376,7 +439,7 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
         TagResolver[] res = {
                 Placeholder.unparsed("player", p.getName()),
                 iqTag(iq),
-                Placeholder.unparsed("correct", String.valueOf(s.correct)),
+                Placeholder.unparsed("correct", String.valueOf(correct)),
                 Placeholder.unparsed("total", String.valueOf(total)),
                 Placeholder.parsed("rank", tierFor(iq).title())
         };
