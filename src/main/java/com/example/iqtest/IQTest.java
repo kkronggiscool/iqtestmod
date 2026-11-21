@@ -234,7 +234,8 @@ public final class IQTest extends JavaPlugin implements CommandExecutor, TabComp
                 && !p.hasPermission("iqtest.bypass");
     }
 
-    Integer getIq(UUID id) {
+    /** Public so other plugins (like IQDisplay) can look a player's IQ up. Null = no IQ yet. */
+    public Integer getIq(UUID id) {
         return iqs.get(id);
     }
 
