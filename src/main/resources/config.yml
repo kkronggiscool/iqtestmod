@@ -1,0 +1,101 @@
+# IQTest configuration
+# Messages use MiniMessage formatting: https://docs.advntr.dev/minimessage/format.html
+# Questions live in questions.yml.
+
+iq:
+  # IQ = min + (max - min) * (correct / total questions), rounded.
+  # With 15 questions: 0-4 correct = negative IQ = BANNED. 5+ correct = you live.
+  min: -52
+  max: 108
+
+lockdown:
+  # Commands (without the slash) that locked players are allowed to use.
+  allowed-commands:
+    - iq
+    - iqtest
+
+# Limits for players who passed. The first tier whose min-iq is <= the player's IQ is used.
+#   walk-speed:            1.0 = normal, 0.5 = half speed
+#   max-chat-length:       max characters per chat message (0 = unlimited)
+#   chat-cooldown-seconds: seconds between chat messages (0 = none)
+#   can-sprint:            false = sprinting is blocked
+tiers:
+  - min-iq: 80
+    title: "<aqua><bold>Galaxy Brain</bold>"
+    walk-speed: 1.0
+    max-chat-length: 0
+    chat-cooldown-seconds: 0
+    can-sprint: true
+  - min-iq: 50
+    title: "<green>Big Brain"
+    walk-speed: 0.9
+    max-chat-length: 150
+    chat-cooldown-seconds: 1
+    can-sprint: true
+  - min-iq: 20
+    title: "<yellow>Average Joe"
+    walk-speed: 0.8
+    max-chat-length: 80
+    chat-cooldown-seconds: 3
+    can-sprint: true
+  - min-iq: 0
+    title: "<gold>Barely There"
+    walk-speed: 0.65
+    max-chat-length: 40
+    chat-cooldown-seconds: 5
+    can-sprint: false
+  - min-iq: -1000   # only reachable if an admin pardons a negative-IQ player
+    title: "<red>Brain Not Found"
+    walk-speed: 0.5
+    max-chat-length: 20
+    chat-cooldown-seconds: 8
+    can-sprint: false
+
+ban:
+  # Legacy color codes with & (the vanilla ban screen shows this). <iq> is replaced with the number.
+  reason: "&c&lThe BAM hammer has SPOKEN!&r &7Your IQ was &c<iq>&7. Stupid people are not allowed."
+
+messages:
+  prefix: "<dark_gray>[<gradient:#ffd200:#ff9a00>IQ Test</gradient><dark_gray>] "
+  only-players: "<red>Only players can use this command."
+  no-permission: "<red>You don't have permission to do that."
+  usage: "<gray>Usage: <yellow>/iq</yellow> <dark_gray>|</dark_gray> <yellow>/iq top</yellow> <dark_gray>|</dark_gray> <yellow>/iq check [player]</yellow> <dark_gray>|</dark_gray> <yellow>/iq reset [player]</yellow> <dark_gray>|</dark_gray> <yellow>/iq reload</yellow>"
+  your-iq: "<gray>Your IQ is <iq><gray>. Rank: <rank>"
+  no-record: "<red>No IQ on record for that player."
+  check-result: "<white><player><gray>'s IQ is <iq><gray>. Rank: <rank>"
+  reset-done: "<green>Reset the IQ of <white><player></white>. They have to retake the test."
+  reloaded: "<green>IQTest reloaded."
+  chat-locked: "<red>You can't chat until you finish the IQ test!"
+  chat-too-long: "<red>Your brain can only handle <yellow><max></yellow> characters at a time!"
+  chat-cooldown: "<red>Slow down, thinking takes time. Wait <yellow><seconds>s</yellow>."
+  command-locked: "<red>Finish your IQ test first! Only <yellow>/iq</yellow> works right now."
+  gui-title: "<gradient:#ffd200:#ff9a00><bold>IQ TEST</bold></gradient>"
+  welcome-title: "<gradient:#ffd200:#ff9a00><bold>IQ TEST</bold></gradient>"
+  welcome-subtitle: "<gray>Answer every question to enter the server"
+  welcome-chat: "<yellow>Welcome! You're frozen until you finish the IQ test. <gray>Hover the paper or read the chat for each question. No going back!"
+  question-title: "<gold><bold>Question <current>/<total>"
+  question-chat: "<gold>Question <current>/<total>: <white><question>"
+  result-title: "<iq>"
+  result-subtitle: "<rank>"
+  top-header: "<gold><bold>Smartest players"
+  top-line: "<gray>#<pos> <white><player> <dark_gray>- <iq>"
+
+  # Global announcement when someone finishes (one chat line per entry).
+  completed:
+    - " "
+    - "<gradient:#00c6ff:#0072ff>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</gradient>"
+    - "  <gradient:#ffd200:#ff9a00><bold>IQ TEST COMPLETE</bold></gradient>"
+    - "  <white><player> <gray>has completed their IQ test with an IQ of <iq><gray>!"
+    - "  <gray>Rank: <rank> <dark_gray>(<correct>/<total> correct)"
+    - "<gradient:#00c6ff:#0072ff>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</gradient>"
+    - " "
+
+  # Global announcement for a negative IQ.
+  banned:
+    - " "
+    - "<gradient:#ff0000:#8b0000>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</gradient>"
+    - "  <gradient:#ff0000:#8b0000><bold>VERDICT DELIVERED</bold></gradient>"
+    - "  <white><player> <gray>has completed their IQ with an IQ of.. <iq><red>?!?"
+    - "  <dark_red><bold>The BAM hammer has SPOKEN!</bold>"
+    - "<gradient:#ff0000:#8b0000>▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</gradient>"
+    - " "

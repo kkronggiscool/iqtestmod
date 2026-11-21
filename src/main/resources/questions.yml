@@ -1,0 +1,65 @@
+# IQTest questions. 2-4 answers each. "correct" is the 0-based index of the right answer
+# (answers are shuffled for each player in-game). Add, remove or edit freely, then /iq reload.
+# The IQ is scaled to however many questions there are.
+# Keep answers short: they are shown as item names.
+
+questions:
+  - question: "What color is the sky on a clear day?"
+    answers: ["Blue", "Green", "Purple", "Brown"]
+    correct: 0
+
+  - question: "How many legs does a spider have?"
+    answers: ["6", "8", "10", "4"]
+    correct: 1
+
+  - question: "What is 7 x 8?"
+    answers: ["54", "56", "48", "63"]
+    correct: 1
+
+  - question: "Which planet is closest to the Sun?"
+    answers: ["Venus", "Earth", "Mercury", "Mars"]
+    correct: 2
+
+  - question: "How many hearts does a player have at full health in Minecraft?"
+    answers: ["20", "5", "10", "12"]
+    correct: 2
+
+  - question: "What do you craft a Crafting Table from?"
+    answers: ["4 planks", "9 planks", "1 log", "4 cobblestone"]
+    correct: 0
+
+  - question: "Which mob explodes when it gets close to you?"
+    answers: ["Zombie", "Creeper", "Skeleton", "Enderman"]
+    correct: 1
+
+  - question: "What is the capital city of Australia?"
+    answers: ["Sydney", "Melbourne", "Canberra", "Perth"]
+    correct: 2
+
+  - question: "Which of these is NOT a dimension in vanilla Minecraft?"
+    answers: ["The Nether", "The End", "The Overworld", "The Aether"]
+    correct: 3
+
+  - question: "What number comes next? 2, 4, 8, 16, ..."
+    answers: ["24", "30", "32", "36"]
+    correct: 2
+
+  - question: "What is the minimum number of obsidian blocks needed for a Nether portal frame (corners not needed)?"
+    answers: ["14", "12", "8", "10"]
+    correct: 3
+
+  - question: "What is the highest level an enchantment table can offer?"
+    answers: ["50", "30", "40", "100"]
+    correct: 1
+
+  - question: "What is the maximum stack size of Ender Pearls?"
+    answers: ["64", "32", "16", "1"]
+    correct: 2
+
+  - question: "What is the base probability of a Wither Skeleton dropping its skull when killed by a player in Java Edition?"
+    answers: ["5%", "1%", "10%", "2.5%"]
+    correct: 3
+
+  - question: "In Java Edition 1.18 and newer, what is the lowest Y level of the Overworld?"
+    answers: ["0", "-32", "-64", "-128"]
+    correct: 2

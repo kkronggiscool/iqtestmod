@@ -1,0 +1,19 @@
+name: IQTest
+version: 1.0.0
+main: com.example.iqtest.IQTest
+api-version: '1.21'
+description: Locks new players down until they finish a 15-question IQ test. Negative IQ gets you banned.
+
+commands:
+  iq:
+    description: View your IQ, or use admin tools.
+    usage: /iq [top|check <player>|reset <player>|reload]
+    aliases: [iqtest]
+
+permissions:
+  iqtest.admin:
+    description: Use /iq check, /iq reset and /iq reload.
+    default: op
+  iqtest.bypass:
+    description: Skip the IQ test entirely (no IQ is recorded).
+    default: false
